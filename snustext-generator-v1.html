@@ -168,10 +168,16 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 const FIELDS=['SEO Headline','SEO Page Title','Meta Description','Short Description','Long Description'];
 let allResults=[],currentProduct=0,currentSite='crew';
 
+function toTitleCase(str){
+  return str.replace(/\S+/g, w=>
+    w.toLowerCase()==='mg' ? 'mg' : w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()
+  );
+}
+
 function parseProducts(raw){
   return raw.trim().split(/\n[ \t]*\n/).map(b=>{
     const lines=b.trim().split('\n');
-    return{name:lines[0].trim(),desc:lines.slice(1).join('\n').trim()};
+    return{name:toTitleCase(lines[0].trim()),desc:lines.slice(1).join('\n').trim()};
   }).filter(p=>p.name&&p.desc);
 }
 
@@ -285,23 +291,27 @@ async function startBatch(){
   document.getElementById('exportBtn').classList.remove('visible');
   document.getElementById('topMeta').textContent=`Generating ${products.length} products...`;
 
-  for(let i=0;i<products.length;i++){
-    document.getElementById('progressFill').style.width=Math.round((i/products.length)*100)+'%';
-    document.getElementById('progressLabel').textContent=`${i+1} / ${products.length} — ${products[i].name}`;
-    let result;
-    try{result=await generateOne(brand,products[i]);}
-    catch(e){result={crew:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''},corp:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''}};}
-    result._name=products[i].name;
-    allResults.push(result);
-    const nav=document.getElementById('productNav');
+  document.getElementById('progressLabel').textContent=`Generating ${products.length} products in parallel...`;
+  document.getElementById('progressFill').style.width='30%';
+
+  const promises=products.map(p=>
+    generateOne(brand,p)
+      .then(r=>{r._name=p.name;return r;})
+      .catch(e=>({_name:p.name,crew:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''},corp:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''}}))
+  );
+
+  allResults=await Promise.all(promises);
+  document.getElementById('progressFill').style.width='90%';
+
+  const nav=document.getElementById('productNav');
+  allResults.forEach((result,i)=>{
     const btn=document.createElement('button');
     const hasError=(result.crew['SEO Headline']||'').startsWith('Error');
-    btn.className='pnav-btn'+(hasError?' error':'')+(allResults.length===1?' active':'');
-    btn.textContent=products[i].name+(hasError?' ⚠':'');
-    const idx=allResults.length-1;
-    btn.onclick=()=>showProduct(idx);
+    btn.className='pnav-btn'+(hasError?' error':'')+(i===0?' active':'');
+    btn.textContent=result._name+(hasError?' ⚠':'');
+    btn.onclick=()=>showProduct(i);
     nav.appendChild(btn);
-  }
+  });
 
   document.getElementById('progressFill').style.width='100%';
   document.getElementById('progressLabel').textContent=`Done — ${products.length} products generated`;
