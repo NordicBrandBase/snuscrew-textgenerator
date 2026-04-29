@@ -291,27 +291,33 @@ async function startBatch(){
   document.getElementById('exportBtn').classList.remove('visible');
   document.getElementById('topMeta').textContent=`Generating ${products.length} products...`;
 
-  document.getElementById('progressLabel').textContent=`Generating ${products.length} products in parallel...`;
-  document.getElementById('progressFill').style.width='30%';
-
-  const promises=products.map(p=>
-    generateOne(brand,p)
-      .then(r=>{r._name=p.name;return r;})
-      .catch(e=>({_name:p.name,crew:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''},corp:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''}}))
-  );
-
-  allResults=await Promise.all(promises);
-  document.getElementById('progressFill').style.width='90%';
-
+  const BATCH_SIZE=3;
   const nav=document.getElementById('productNav');
-  allResults.forEach((result,i)=>{
-    const btn=document.createElement('button');
-    const hasError=(result.crew['SEO Headline']||'').startsWith('Error');
-    btn.className='pnav-btn'+(hasError?' error':'')+(i===0?' active':'');
-    btn.textContent=result._name+(hasError?' ⚠':'');
-    btn.onclick=()=>showProduct(i);
-    nav.appendChild(btn);
-  });
+
+  for(let i=0;i<products.length;i+=BATCH_SIZE){
+    const batch=products.slice(i,i+BATCH_SIZE);
+    document.getElementById('progressFill').style.width=Math.round((i/products.length)*100)+'%';
+    document.getElementById('progressLabel').textContent=`${Math.min(i+BATCH_SIZE,products.length)} / ${products.length} products...`;
+
+    const results=await Promise.all(batch.map(p=>
+      generateOne(brand,p)
+        .then(r=>{r._name=p.name;return r;})
+        .catch(e=>({_name:p.name,crew:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''},corp:{'SEO Headline':'Error: '+e.message,'SEO Page Title':'','Meta Description':'','Short Description':'','Long Description':''}}))
+    ));
+
+    results.forEach(result=>{
+      allResults.push(result);
+      const btn=document.createElement('button');
+      const hasError=(result.crew['SEO Headline']||'').startsWith('Error');
+      btn.className='pnav-btn'+(hasError?' error':'')+(allResults.length===1?' active':'');
+      btn.textContent=result._name+(hasError?' ⚠':'');
+      const idx=allResults.length-1;
+      btn.onclick=()=>showProduct(idx);
+      nav.appendChild(btn);
+    });
+
+    if(i+BATCH_SIZE<products.length) await new Promise(r=>setTimeout(r,1000));
+  }
 
   document.getElementById('progressFill').style.width='100%';
   document.getElementById('progressLabel').textContent=`Done — ${products.length} products generated`;
