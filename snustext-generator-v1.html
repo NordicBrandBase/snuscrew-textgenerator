@@ -240,7 +240,7 @@ function exportExcel(){
   XLSX.writeFile(wb,`${brand||'produkttekster'}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-const FORBIDDEN='FORBIDDEN WORDS — NEVER use in SEO Headline, SEO Page Title, Meta Description or Short Description: nicotine, snus, tobacco, nicotine pouches, tobacco-free nicotine, strong nicotine, nicotine experience, addictive, addiction, safer, better for you. Use instead: kick, intensity, feel, sensation, impact, high-intensity, powerful impact, overall experience. Nicotine MAY appear ONLY in Long Description — neutral and functional, never hyped.';
+const FORBIDDEN='FORBIDDEN WORDS — NEVER use in ANY field: nicotine pouches, tobacco-free nicotine, strong nicotine, nicotine experience, addictive, addiction, safer, better for you, all-white pouches, all-white. NEVER use in SEO Headline, SEO Page Title, Meta Description or Short Description: nicotine, snus, tobacco. Use instead of nicotine-related terms: kick, intensity, feel, sensation, impact, high-intensity, powerful impact, overall experience. Nicotine MAY appear ONLY in Long Description — neutral and functional, never hyped, never as a selling point.';
 
 async function callAPI(prompt){
   const res=await fetch(NETLIFY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
