@@ -3,136 +3,166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SnusText Generator v1</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>SnusText Generator v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg:#f0f4f8;--s1:#ffffff;--s2:#e6edf5;--s3:#d4e1ef;
   --b1:#c2d0e0;--b2:#a0b4cc;
   --text:#1b3b6a;--muted:#6b8aaa;--muted2:#a0b4cc;
-  --accent:#1b3b6a;--adim:rgba(27,59,106,.08);
-  --accent2:#ff5300;--red:#ff5300;--rdim:rgba(255,83,0,.08);
-  --orange:#ff5300;--blue:#6fa8d0;--bdim:rgba(111,168,208,.15);
+  --accent:#1b3b6a;--accent2:#ff5300;
+  --red:#ff5300;--rdim:rgba(255,83,0,.08);
+  --blue:#6fa8d0;--bdim:rgba(111,168,208,.15);
   --green:#0ea672;
   --r:8px;--rl:12px;
   --font-sys:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
-body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(27,59,106,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(27,59,106,.03) 1px,transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
-.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--b1); background: var(--s1); }
-.logo { font-family: var(--font-sys); font-size: 13px; letter-spacing: .08em; }
-.logo b { color: var(--accent); }
-.logo span { color: var(--accent2); }
-.top-meta { font-size: 12px; color: var(--muted); font-family: var(--font-sys); }
-.app { position: relative; z-index: 1; display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 53px); }
-.sidebar { border-right: 1px solid var(--b1); background: var(--bg); padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: calc(100vh - 53px); position: sticky; top: 53px; }
-.sidebar::-webkit-scrollbar { width: 3px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
-.sec-lbl { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-.fl { margin-bottom: 10px; }
-.fl label { font-size: 10px; color: var(--muted); display: block; margin-bottom: 4px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
-.fl input, .fl textarea { width: 100%; background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r); padding: 8px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; resize: none; transition: border-color .15s; }
-.fl input:focus, .fl textarea:focus { border-color: var(--accent); }
-.fl textarea { min-height: 220px; line-height: 1.6; }
-.hint { font-size: 11px; color: var(--muted); line-height: 1.5; background: var(--s2); border-radius: var(--r); padding: 8px 10px; border-left: 3px solid var(--b2); }
-.gen-btn { width: 100%; height: 40px; background: var(--accent2); color: #fff; border: none; border-radius: var(--r); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity .15s, transform .1s; }
-.gen-btn:hover { opacity: .88; }
-.gen-btn:active { transform: scale(.99); }
-.gen-btn:disabled { background: var(--b1); color: var(--muted); cursor: not-allowed; transform: none; opacity: 1; }
-.progress-wrap { display: none; }
-.progress-bar-bg { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; margin-top: 8px; }
-.progress-bar-fill { height: 100%; background: var(--accent2); border-radius: 2px; transition: width .3s ease; width: 0%; }
-.progress-label { font-size: 11px; color: var(--muted); font-family: var(--font-sys); margin-top: 5px; text-align: center; }
-.err-msg { font-size: 12px; color: var(--red); background: var(--rdim); border-radius: var(--r); padding: 8px 10px; display: none; line-height: 1.5; }
-.main { background: var(--s1); padding: 24px; overflow-y: auto; max-height: calc(100vh - 53px); }
-.main::-webkit-scrollbar { width: 3px; }
-.main::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
-.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; color: var(--muted); text-align: center; gap: 10px; }
-.empty-state h3 { font-size: 15px; font-weight: 500; color: var(--text); }
-.empty-state p { font-size: 13px; line-height: 1.6; max-width: 320px; }
-.product-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-.pnav-btn { font-size: 12px; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--b1); cursor: pointer; background: var(--s2); color: var(--muted); font-family: 'Inter', sans-serif; transition: all .15s; }
-.pnav-btn:hover { border-color: var(--b2); color: var(--text); }
-.pnav-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); font-weight: 600; }
-.pnav-btn.error { border-color: var(--red); color: var(--red); background: var(--rdim); }
-.site-tabs { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--b1); border-radius: var(--r); overflow: hidden; width: fit-content; }
-.stab { font-size: 13px; font-weight: 500; padding: 8px 22px; border: none; border-right: 1px solid var(--b1); cursor: pointer; background: var(--s2); color: var(--muted); font-family: 'Inter', sans-serif; transition: all .15s; }
-.stab:last-child { border-right: none; }
-.stab:hover { background: var(--s3); color: var(--text); }
-.stab.active { background: var(--accent); color: #fff; }
-.output-card { background: var(--bg); border: 1px solid var(--b1); border-radius: var(--rl); overflow: hidden; }
-.output-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--b1); background: var(--s2); }
-.output-header-left { display: flex; align-items: center; gap: 8px; }
-.site-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; letter-spacing: .05em; text-transform: uppercase; }
-.badge-crew { background: var(--rdim); color: var(--accent2); }
-.badge-corp { background: var(--bdim); color: var(--blue); }
-.output-product-name { font-size: 12px; font-weight: 600; color: var(--text); font-family: var(--font-sys); }
-.copy-all-btn { font-size: 12px; padding: 4px 12px; border: 1px solid var(--b1); border-radius: var(--r); cursor: pointer; background: var(--s1); color: var(--muted); font-family: 'Inter', sans-serif; transition: all .15s; }
-.copy-all-btn:hover { background: var(--s3); color: var(--text); border-color: var(--b2); }
-.copy-all-btn.copied { color: var(--green); border-color: var(--green); }
-.output-fields { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-.field-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-.field-name { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.char-count { font-size: 10px; font-family: var(--font-sys); color: var(--muted2); }
-.char-count.ok { color: var(--green); }
-.char-count.warn { color: var(--orange); }
-.field-value { font-size: 13px; color: var(--text); line-height: 1.7; background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r); padding: 10px 12px; white-space: pre-wrap; cursor: text; user-select: text; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(27,59,106,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(27,59,106,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:52px;border-bottom:1px solid var(--b1);background:var(--s1);}
+.logo{font-family:var(--font-sys);font-size:13px;letter-spacing:.08em;}
+.logo b{color:var(--accent);}
+.logo span{color:var(--accent2);}
+.top-right{display:flex;align-items:center;gap:10px;}
+.top-meta{font-size:12px;color:var(--muted);font-family:var(--font-sys);}
+.export-btn{display:none;align-items:center;gap:6px;height:30px;padding:0 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;}
+.export-btn:hover{opacity:.85;}
+.export-btn.visible{display:flex;}
+
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:32px 24px 60px;}
+
+/* STEP */
+.step{margin-bottom:28px;}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-title{font-size:13px;font-weight:600;color:var(--text);}
+
+.input-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);padding:20px;}
+.input-grid{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:start;}
+
+.fl label{font-size:10px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+.fl input{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r);padding:8px 10px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;}
+.fl input:focus{border-color:var(--accent);}
+.fl textarea{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;resize:vertical;min-height:160px;line-height:1.65;transition:border-color .15s;}
+.fl textarea:focus{border-color:var(--accent);}
+.hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px;}
+
+.gen-row{display:flex;align-items:center;gap:14px;margin-top:16px;}
+.gen-btn{height:38px;padding:0 24px;background:var(--accent2);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s,transform .1s;white-space:nowrap;}
+.gen-btn:hover{opacity:.88;}
+.gen-btn:active{transform:scale(.99);}
+.gen-btn:disabled{background:var(--b1);color:var(--muted);cursor:not-allowed;transform:none;opacity:1;}
+.progress-wrap{flex:1;display:none;}
+.progress-bar-bg{height:3px;background:var(--s3);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent2);border-radius:2px;transition:width .3s ease;width:0%;}
+.progress-label{font-size:11px;color:var(--muted);font-family:var(--font-sys);margin-top:4px;}
+.err-msg{font-size:12px;color:var(--red);background:var(--rdim);border-radius:var(--r);padding:8px 10px;display:none;line-height:1.5;margin-top:10px;}
+
+/* OUTPUT */
+.output-section{display:none;}
+.output-controls{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.product-nav{display:flex;flex-wrap:wrap;gap:6px;flex:1;}
+.pnav-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--b1);cursor:pointer;background:var(--s1);color:var(--muted);font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap;}
+.pnav-btn:hover{border-color:var(--b2);color:var(--text);}
+.pnav-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2);font-weight:600;}
+.pnav-btn.error{border-color:var(--red);color:var(--red);background:var(--rdim);}
+
+.site-tabs{display:flex;border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;flex-shrink:0;}
+.stab{font-size:12px;font-weight:500;padding:6px 18px;border:none;border-right:1px solid var(--b1);cursor:pointer;background:var(--s2);color:var(--muted);font-family:'Inter',sans-serif;transition:all .15s;}
+.stab:last-child{border-right:none;}
+.stab:hover{background:var(--s3);color:var(--text);}
+.stab.active{background:var(--accent);color:#fff;}
+
+.output-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);overflow:hidden;}
+.output-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--b1);background:var(--s2);}
+.output-header-left{display:flex;align-items:center;gap:8px;}
+.site-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;letter-spacing:.05em;text-transform:uppercase;}
+.badge-crew{background:var(--rdim);color:var(--accent2);}
+.badge-corp{background:var(--bdim);color:var(--blue);}
+.output-product-name{font-size:12px;font-weight:600;color:var(--text);font-family:var(--font-sys);}
+.copy-all-btn{font-size:12px;padding:4px 12px;border:1px solid var(--b1);border-radius:var(--r);cursor:pointer;background:var(--s1);color:var(--muted);font-family:'Inter',sans-serif;transition:all .15s;}
+.copy-all-btn:hover{background:var(--s3);color:var(--text);border-color:var(--b2);}
+.copy-all-btn.copied{color:var(--green);border-color:var(--green);}
+.output-fields{padding:16px;display:flex;flex-direction:column;gap:14px;}
+.field-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.field-name{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.char-count{font-size:10px;font-family:var(--font-sys);color:var(--muted2);}
+.char-count.ok{color:var(--green);}
+.char-count.warn{color:var(--accent2);}
+.field-value{font-size:13px;color:var(--text);line-height:1.7;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;white-space:pre-wrap;user-select:text;}
 </style>
 </head>
 <body>
+
 <div class="topbar">
   <div class="logo"><b>NORDIC</b><span>BRANDBASE</span> &nbsp;/&nbsp; SnusText Generator</div>
-  <div class="top-meta" id="topMeta">Ready</div>
-</div>
-<div class="app">
-  <div class="sidebar">
-    <div>
-      <div class="sec-lbl">Brand</div>
-      <div class="fl">
-        <label>Brand name</label>
-        <input type="text" id="brand" placeholder="e.g. Edel" />
-      </div>
-    </div>
-    <div>
-      <div class="sec-lbl">Products</div>
-      <div class="fl">
-        <label>Paste raw products</label>
-        <textarea id="raw" placeholder="ONYX — 15mg&#10;The edel ONYX is the strongest...&#10;&#10;COLD — 12mg&#10;The edel COLD..."></textarea>
-      </div>
-      <div class="hint">Product name + strength on line 1. Description below. Blank line between products.</div>
-    </div>
-    <button class="gen-btn" id="genBtn" onclick="startBatch()">Generate all products</button>
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-      <div class="progress-label" id="progressLabel"></div>
-    </div>
-    <div class="err-msg" id="errMsg"></div>
+  <div class="top-right">
+    <div class="top-meta" id="topMeta">Ready</div>
+    <button class="export-btn" id="exportBtn" onclick="exportExcel()">Export Excel</button>
   </div>
-  <div class="main">
-    <div class="empty-state" id="emptyState">
-      <h3>No texts generated yet</h3>
-      <p>Enter a brand name, paste your raw product descriptions, and click Generate.</p>
+</div>
+
+<div class="page">
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">Paste your raw product texts</div>
     </div>
-    <div id="resultsArea" style="display:none;">
+    <div class="input-card">
+      <div class="input-grid">
+        <div class="fl">
+          <label>Brand name</label>
+          <input type="text" id="brand" placeholder="e.g. Edel" />
+        </div>
+        <div class="fl">
+          <label>Raw products</label>
+          <textarea id="raw" placeholder="ONYX — 15mg&#10;The edel ONYX is the strongest all-white snus on the Swiss market...&#10;&#10;COLD — 12mg&#10;The edel COLD under everyone's lip...&#10;&#10;BERRY ICE — 12mg&#10;Experience the refreshing and unique coolness..."></textarea>
+          <div class="hint">Product name + strength on line 1. Description below. Blank line between products.</div>
+        </div>
+      </div>
+      <div class="gen-row">
+        <button class="gen-btn" id="genBtn" onclick="startBatch()">Generate all products</button>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+          <div class="progress-label" id="progressLabel"></div>
+        </div>
+      </div>
+      <div class="err-msg" id="errMsg"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step output-section" id="outputSection">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">Generated texts</div>
+    </div>
+    <div class="output-controls">
       <div class="product-nav" id="productNav"></div>
       <div class="site-tabs">
         <button class="stab active" onclick="showSite('crew',this)">SnusCrew</button>
         <button class="stab" onclick="showSite('corp',this)">SnusCorp</button>
       </div>
-      <div class="output-card">
-        <div class="output-header">
-          <div class="output-header-left">
-            <span class="site-badge badge-crew" id="siteBadge">CREW</span>
-            <span class="output-product-name" id="outputProductName"></span>
-          </div>
-          <button class="copy-all-btn" id="copyAllBtn" onclick="copyAll()">Copy all</button>
+    </div>
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-header-left">
+          <span class="site-badge badge-crew" id="siteBadge">CREW</span>
+          <span class="output-product-name" id="outputProductName"></span>
         </div>
-        <div class="output-fields" id="fieldsContainer"></div>
+        <button class="copy-all-btn" id="copyAllBtn" onclick="copyAll()">Copy all</button>
       </div>
+      <div class="output-fields" id="fieldsContainer"></div>
     </div>
   </div>
+
 </div>
+
 <script>
 const NETLIFY='https://wondrous-baklava-4e9849.netlify.app/.netlify/functions/claude-api';
 const FIELDS=['SEO Headline','SEO Page Title','Meta Description','Short Description','Long Description'];
@@ -144,6 +174,7 @@ function parseProducts(raw){
     return{name:lines[0].trim(),desc:lines.slice(1).join('\n').trim()};
   }).filter(p=>p.name&&p.desc);
 }
+
 function showSite(site,btn){
   currentSite=site;
   document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
@@ -153,11 +184,13 @@ function showSite(site,btn){
   badge.className='site-badge '+(site==='crew'?'badge-crew':'badge-corp');
   renderCurrent();
 }
+
 function showProduct(idx){
   currentProduct=idx;
   document.querySelectorAll('.pnav-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
   renderCurrent();
 }
+
 function renderCurrent(){
   const data=allResults[currentProduct];
   if(!data)return;
@@ -170,6 +203,7 @@ function renderCurrent(){
     return`<div class="output-field"><div class="field-header"><span class="field-name">${f}</span>${charHtml}</div><div class="field-value">${val}</div></div>`;
   }).join('');
 }
+
 function copyAll(){
   const data=allResults[currentProduct];
   if(!data)return;
@@ -182,6 +216,30 @@ function copyAll(){
     setTimeout(()=>{btn.textContent='Copy all';btn.classList.remove('copied');},2000);
   });
 }
+
+function exportExcel(){
+  if(!allResults.length)return;
+  const brand=document.getElementById('brand').value.trim();
+  const headers=['Brand','Produkt','SEO Headline','SEO Page Titel','Meta Desctiption','Short Description','Long Description'];
+  const crewRows=[headers];
+  const corpRows=[headers];
+  allResults.forEach(r=>{
+    const n=r._name||'';
+    const c=r.crew||{};const p=r.corp||{};
+    crewRows.push([brand,n,c['SEO Headline']||'',c['SEO Page Title']||'',c['Meta Description']||'',c['Short Description']||'',c['Long Description']||'']);
+    corpRows.push([brand,n,p['SEO Headline']||'',p['SEO Page Title']||'',p['Meta Description']||'',p['Short Description']||'',p['Long Description']||'']);
+  });
+  const wb=XLSX.utils.book_new();
+  function makeSheet(rows){
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:12},{wch:25},{wch:40},{wch:40},{wch:55},{wch:60},{wch:80}];
+    return ws;
+  }
+  XLSX.utils.book_append_sheet(wb,makeSheet(crewRows),'SnusCrew');
+  XLSX.utils.book_append_sheet(wb,makeSheet(corpRows),'SnusCorp');
+  XLSX.writeFile(wb,`${brand||'produkttekster'}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
 async function generateOne(brand,p){
   const prompt=`You are a professional product copywriter. Generate product texts for TWO websites. Output ONLY valid JSON, no markdown.
 
@@ -192,7 +250,7 @@ Source info (use ONLY for flavor/strength facts, never copy or rephrase): ${p.de
 SNUSCREW (young, edgy, modern, confident):
 - NEVER copy/rephrase source. Fields 1-4: no nicotine/snus/tobacco. Field 5 MAY mention nicotine.
 - No: Premium, High Quality, filler phrases.
-- SEO Headline: [2-5 word edgy hook] – [Full product name]
+- SEO Headline: [2-5 word creative edgy hook] – [Full product name]
 - SEO Page Title: [Product name] – [2-4 word vibe]. Max 60 chars. Dash only. No colon/comma/pipe.
 - Meta Description: 120-160 chars STRICT. Taste+feeling+vibe. Sharp, clean.
 - Short Description: 1 flowing paragraph, 4-6 lines. No bullets. Confident, modern.
@@ -209,17 +267,14 @@ SNUSCORP (professional, informational, B2B):
 Return ONLY this JSON:
 {"crew":{"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""},"corp":{"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}}`;
 
-  const res=await fetch(NETLIFY,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
-  });
+  const res=await fetch(NETLIFY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
   if(!res.ok)throw new Error(`HTTP ${res.status}`);
   const data=await res.json();
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   const text=data.content?.map(b=>b.text||'').join('')||'';
   return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
+
 async function startBatch(){
   const brand=document.getElementById('brand').value.trim();
   const raw=document.getElementById('raw').value.trim();
@@ -228,13 +283,15 @@ async function startBatch(){
   if(!raw){errEl.textContent='Please paste product descriptions.';errEl.style.display='block';return;}
   const products=parseProducts(raw);
   if(!products.length){errEl.textContent='Could not parse products. Make sure there is a blank line between each product.';errEl.style.display='block';return;}
+
   allResults=[];
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('resultsArea').style.display='none';
+  document.getElementById('outputSection').style.display='none';
   document.getElementById('productNav').innerHTML='';
   document.getElementById('genBtn').disabled=true;
   document.getElementById('progressWrap').style.display='block';
+  document.getElementById('exportBtn').classList.remove('visible');
   document.getElementById('topMeta').textContent=`Generating ${products.length} products...`;
+
   for(let i=0;i<products.length;i++){
     document.getElementById('progressFill').style.width=Math.round((i/products.length)*100)+'%';
     document.getElementById('progressLabel').textContent=`${i+1} / ${products.length} — ${products[i].name}`;
@@ -252,16 +309,22 @@ async function startBatch(){
     btn.onclick=()=>showProduct(idx);
     nav.appendChild(btn);
   }
+
   document.getElementById('progressFill').style.width='100%';
   document.getElementById('progressLabel').textContent=`Done — ${products.length} products generated`;
   document.getElementById('genBtn').disabled=false;
-  document.getElementById('resultsArea').style.display='block';
+  document.getElementById('outputSection').style.display='block';
+  document.getElementById('exportBtn').classList.add('visible');
   document.getElementById('topMeta').textContent=`${products.length} products generated`;
+
   currentProduct=0;currentSite='crew';
   document.querySelectorAll('.stab').forEach((b,i)=>b.classList.toggle('active',i===0));
   document.getElementById('siteBadge').textContent='CREW';
   document.getElementById('siteBadge').className='site-badge badge-crew';
   showProduct(0);
+
+  // Scroll to output
+  setTimeout(()=>document.getElementById('outputSection').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 </script>
 </body>
