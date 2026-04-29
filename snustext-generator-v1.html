@@ -240,48 +240,28 @@ function exportExcel(){
   XLSX.writeFile(wb,`${brand||'produkttekster'}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-async function generateOne(brand,p){
-  const prompt=`You are a professional product copywriter. Generate product texts for TWO websites. Output ONLY valid JSON, no markdown.
+const FORBIDDEN='FORBIDDEN WORDS — NEVER use in SEO Headline, SEO Page Title, Meta Description or Short Description: nicotine, snus, tobacco, nicotine pouches, tobacco-free nicotine, strong nicotine, nicotine experience, addictive, addiction, safer, better for you. Use instead: kick, intensity, feel, sensation, impact, high-intensity, powerful impact, overall experience. Nicotine MAY appear ONLY in Long Description — neutral and functional, never hyped.';
 
-Brand: ${brand}
-Product: ${p.name}
-Source info (use ONLY for flavor/strength facts, never copy or rephrase): ${p.desc}
-
-FORBIDDEN WORDS — NEVER use in ANY field (SEO Headline, SEO Page Title, Meta Description, Short Description):
-nicotine, snus, tobacco, nicotine pouches, tobacco-free nicotine, strong nicotine, nicotine experience, addictive, addiction, safer, better for you.
-Instead use: "kick", "intensity", "feel", "sensation", "impact", "high-intensity", "powerful impact", "overall experience".
-Nicotine MAY appear ONLY in Long Description — used neutrally and functionally, never as a sales point.
-
-SNUSCREW (young, edgy, modern, confident):
-- NEVER copy/rephrase source text.
-- SEO Headline: [2-5 word creative edgy hook] – [Full product name]. No forbidden words.
-- SEO Page Title: [Product name] – [2-4 word vibe]. Max 60 chars. Dash only. No colon/comma/pipe. No forbidden words.
-- Meta Description: 120-160 chars STRICT. Taste+feeling+vibe. Sharp, clean. No forbidden words.
-- Short Description: 1 flowing paragraph, 6-8 lines. No bullets. Confident, modern. No forbidden words.
-- Long Description: 14-20 lines, 2-3 paragraphs. Storytelling. Nicotine MAY appear here — functional and neutral only, never hyped.
-- Never use: Premium, High Quality, generic filler phrases.
-
-SNUSCORP (professional, informational, B2B):
-- NEVER copy/rephrase source text.
-- SEO Headline: [Product name] – [short descriptive phrase]. No forbidden words.
-- SEO Page Title: [Product name] – [flavor/type]. Max 60 chars. Dash only. No forbidden words.
-- Meta Description: 120-160 chars STRICT. Factual and clear. No forbidden words.
-- Short Description: 2-4 sentences. Clear, no attitude. No forbidden words.
-- Long Description: 2-3 paragraphs. Professional. Nicotine strength and format MAY be mentioned neutrally.
-
-Return ONLY this JSON:
-{"crew":{"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""},"corp":{"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}}`;
-
+async function callAPI(prompt){
   const res=await fetch(NETLIFY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
   if(!res.ok)throw new Error(`HTTP ${res.status}`);
   const data=await res.json();
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   const text=data.content?.map(b=>b.text||'').join('')||'';
-  const clean=text.replace(/```json|```/g,'').trim();
-  // Extract JSON object robustly
-  const match=clean.match(/\{[\s\S]*\}/);
-  if(!match)throw new Error('No JSON found in response');
-  return JSON.parse(match[0]);
+  const start=text.indexOf('{');const end=text.lastIndexOf('}');
+  if(start===-1||end===-1)throw new Error('No JSON in response');
+  return JSON.parse(text.slice(start,end+1));
+}
+
+async function generateOne(brand,p){
+  const base=`Brand: ${brand}\nProduct: ${p.name}\nSource info (use ONLY for flavor/strength facts, never copy or rephrase): ${p.desc}\n\n${FORBIDDEN}`;
+
+  const crewPrompt=`You are a product copywriter. Write SnusCrew texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCREW RULES (young, edgy, modern, confident):\n- NEVER copy/rephrase source text.\n- SEO Headline: [2-5 word edgy hook] – [Full product name]\n- SEO Page Title: [Product name] – [2-4 word vibe]. Max 60 chars. Dash only. No colon/comma/pipe.\n- Meta Description: 120-160 chars STRICT. Taste+feeling+vibe. Sharp, clean.\n- Short Description: 1 flowing paragraph, 6-8 lines. No bullets. Confident, modern.\n- Long Description: 14-20 lines, 2-3 paragraphs. Storytelling. Nicotine MAY appear here — neutral only.\n- Never use: Premium, High Quality, filler phrases.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
+
+  const corpPrompt=`You are a product copywriter. Write SnusCorp texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCORP RULES (professional, informational, B2B, neutral):\n- NEVER copy/rephrase source text.\n- SEO Headline: [Product name] – [short descriptive phrase]\n- SEO Page Title: [Product name] – [flavor/type]. Max 60 chars. Dash only.\n- Meta Description: 120-160 chars STRICT. Factual and clear.\n- Short Description: 2-4 sentences. Clear, no attitude.\n- Long Description: 2-3 paragraphs. Professional. Nicotine strength MAY be mentioned neutrally.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
+
+  const [crew,corp]=await Promise.all([callAPI(crewPrompt),callAPI(corpPrompt)]);
+  return{crew,corp};
 }
 
 async function startBatch(){
