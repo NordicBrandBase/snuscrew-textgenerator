@@ -169,6 +169,10 @@ const FIELDS=['SEO Headline','SEO Page Title','Meta Description','Short Descript
 let allResults=[],currentProduct=0,currentSite='crew';
 
 function toTitleCase(str){
+  // Remove dash/hyphen before mg: "8 - mg" or "8- mg" or "8 -mg" -> "8mg"
+  str = str.replace(/\s*-\s*(?=\d*mg)/gi, '');
+  // Also handle "name - 8mg" -> "name 8mg"
+  str = str.replace(/\s+-\s+(?=\d)/g, ' ');
   return str.replace(/\S+/g, w=>
     w.toLowerCase()==='mg' ? 'mg' : w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()
   );
@@ -266,9 +270,9 @@ async function callAPI(prompt){
 async function generateOne(brand,p){
   const base=`Brand: ${brand}\nProduct: ${p.name}\nSource info (use ONLY for flavor/strength facts, never copy or rephrase): ${p.desc}\n\n${FORBIDDEN}`;
 
-  const crewPrompt=`You are a product copywriter. Write SnusCrew texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCREW RULES (young, edgy, modern, confident):\n- NEVER copy/rephrase source text.\n- SEO Headline: [2-5 word edgy hook] – [Full product name]\n- SEO Page Title: [Product name] – [2-4 word vibe]. Max 60 chars. Dash only. No colon/comma/pipe.\n- Meta Description: 120-160 chars STRICT. Taste+feeling+vibe. Sharp, clean.\n- Short Description: 1 flowing paragraph, 6-8 lines. No bullets. Confident, modern.\n- Long Description: 14-20 lines, 2-3 paragraphs. Storytelling. Nicotine MAY appear here — neutral only.\n- Never use: Premium, High Quality, filler phrases.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
+  const crewPrompt=`You are a product copywriter. Write SnusCrew texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCREW RULES (young, edgy, modern, confident):\n- NEVER copy/rephrase source text.\n- SEO Headline: [3-6 word edgy hook] – [Full product name]. Hook FIRST, product name LAST. Total 45-70 chars. Hook must be punchy, NOT a full sentence.\n- SEO Page Title: [Full product name] – [3-6 word vibe/sensation]. Max 60 chars. Compact and sensory.\n- Meta Description: STRICT 120-160 chars. One flowing sentence. Taste+feeling+vibe. No keyword stuffing.\n- Short Description: 300-450 chars. One paragraph, 4-6 lines visually. Short e-commerce intro with vibe. Not salesy, not fluffy.\n- Long Description: 700-1400 chars. 2-3 paragraphs, 10-20 lines. Editorial product description. Vivid, deep, premium feel. Nicotine MAY appear here — neutral only.\n- Never use: Premium, High Quality, filler phrases.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
 
-  const corpPrompt=`You are a product copywriter. Write SnusCorp texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCORP RULES (professional, informational, B2B, neutral):\n- NEVER copy/rephrase source text.\n- SEO Headline: [Product name] – [short descriptive phrase]\n- SEO Page Title: [Product name] – [flavor/type]. Max 60 chars. Dash only.\n- Meta Description: 120-160 chars STRICT. Factual and clear.\n- Short Description: 2-4 sentences. Clear, no attitude.\n- Long Description: 2-3 paragraphs. Professional. Nicotine strength MAY be mentioned neutrally.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
+  const corpPrompt=`You are a product copywriter. Write SnusCorp texts. Output ONLY valid JSON, no markdown.\n\n${base}\n\nSNUSCORP RULES (professional, informational, B2B, neutral):\n- NEVER copy/rephrase source text.\n- SEO Headline: [3-6 word descriptive hook] – [Full product name]. Hook FIRST, product name LAST. Total 45-70 chars.\n- SEO Page Title: [Full product name] – [3-6 word flavor/type description]. Max 60 chars. Dash only.\n- Meta Description: STRICT 120-160 chars. One clear factual sentence. No keyword stuffing.\n- Short Description: 300-450 chars. 2-3 sentences. Clear product description, 4-6 lines visually. Informative but not dry.\n- Long Description: 700-1400 chars. 2-3 paragraphs, 10-20 lines. Professional editorial description. Flavor profile, intensity, character. Nicotine strength MAY be mentioned neutrally.\n\nReturn ONLY: {"SEO Headline":"","SEO Page Title":"","Meta Description":"","Short Description":"","Long Description":""}`;
 
   const crew=await callAPI(crewPrompt);
   const corp=await callAPI(corpPrompt);
